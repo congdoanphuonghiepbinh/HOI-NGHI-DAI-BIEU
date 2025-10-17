@@ -27,7 +27,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 0 0 20px 0; /* Giảm padding trên cùng */
+            padding: 0 0 20px 0;
             overflow-x: hidden; 
         }
         
@@ -35,7 +35,7 @@
         /* MENU & CARD STYLING */
         /* ------------------------------------- */
         #mainMenu {
-             display: flex; /* Đảm bảo menu chính là flex container */
+             display: flex;
              flex-direction: column;
              align-items: center;
              width: 100%;
@@ -119,7 +119,8 @@
             max-width: 900px;
             /* FIX: Đảm bảo có thể cuộn trên di động */
             overflow-y: auto; 
-            max-height: 90vh; 
+            max-height: 100vh; /* Sử dụng 100vh để chiếm toàn bộ màn hình xem */
+            box-sizing: border-box; /* Đảm bảo padding không làm tràn màn hình */
         }
 
         .book-control-top {
@@ -141,6 +142,21 @@
             margin-top: 20px;
             padding-bottom: 20px;
         }
+        
+        /* Nút chuyển trang nhỏ gọn */
+        .page-nav-icon {
+            @apply p-3 rounded-full bg-gray-300 text-gray-800 transition duration-300 hover:bg-gray-400 shadow-md;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .page-nav-icon:disabled {
+            @apply bg-gray-200 text-gray-500 cursor-not-allowed;
+        }
 
         .book-container {
             width: var(--book-width);
@@ -148,7 +164,7 @@
             position: relative;
             perspective: 1500px;
             transform-style: preserve-3d;
-            margin: 0 auto; /* Đã loại bỏ margin-top/bottom để sử dụng book-control-bottom */
+            margin: 0 auto;
             border: 1px solid #ccc;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
         }
@@ -160,8 +176,8 @@
                 padding: 10px;
             }
             .book-container {
-                width: 95vw; /* Chiếm gần hết chiều rộng màn hình */
-                height: 80vh; /* Tăng chiều cao để đọc thoải mái */
+                width: 95vw;
+                height: 80vh;
                 max-height: 500px;
             }
         }
@@ -333,11 +349,11 @@
         
         <!-- CONTROL BOTTOM (Nút Trang Trước/Sau - ĐÃ DI CHUYỂN XUỐNG DƯỚI) -->
         <div class="book-control-bottom w-full">
-            <button id="prevPage" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300 hover:bg-gray-400 flex items-center shadow-lg">
-                <i class="fas fa-chevron-left mr-2"></i> TRANG TRƯỚC
+            <button id="prevPage" class="page-nav-icon">
+                <i class="fas fa-chevron-left"></i>
             </button>
-             <button id="nextPage" class="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition duration-300 hover:bg-gray-400 flex items-center shadow-lg">
-                TRANG SAU <i class="fas fa-chevron-right ml-2"></i>
+             <button id="nextPage" class="page-nav-icon">
+                <i class="fas fa-chevron-right"></i>
             </button>
         </div>
     </div>
@@ -351,11 +367,15 @@
             if (hostname.endsWith('github.io')) {
                 // Trên GitHub Pages, đường dẫn cơ sở là tên repository
                 // Lấy tên repo từ pathname (thường là thành phần đầu tiên sau dấu /)
-                const repoName = pathname.split('/')[1]; 
-                // Tạo đường dẫn cơ sở tuyệt đối
+                const pathParts = pathname.split('/').filter(p => p.length > 0);
+                const repoName = pathParts[0]; 
+                
+                // Trả về đường dẫn tuyệt đối đầy đủ
+                // Ví dụ: https://congdoanphuonghiepbinh.github.io/HOI-NGHI-DAI-BIEU/
                 return `${window.location.protocol}//${hostname}/${repoName}/`;
             } else {
                  // Trường hợp Localhost hoặc hosting khác
+                 // Trả về đường dẫn hiện tại (ví dụ: http://localhost:8080/)
                  return window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
             }
         }
@@ -416,7 +436,8 @@
                 prevPageButton.disabled = false;
             }, 1200); // Đợi chuyển đổi 1.2s kết thúc
             
-            // Vì không thể điều khiển trình xem PDF nội bộ, chỉ mô phỏng hiệu ứng
+            // NOTE: Vì không thể điều khiển trình xem PDF nội bộ, hiệu ứng này chỉ mang tính chất mô phỏng
+            // Việc cuộn trang bên trong iframe vẫn cần được thực hiện thủ công.
         }
 
         // Hàm tải và hiển thị PDF
@@ -428,8 +449,10 @@
             flipPage.classList.remove('flipped'); // Reset trạng thái lật
 
             try {
-                // FIX LỖI Invalid URL: Xây dựng URL an toàn bằng BASE_PATH
-                const fullResourceUrl = BASE_PATH + relativePath;
+                // FIX LỖI Invalid URL và LỖI TẢI: Xây dựng URL an toàn bằng BASE_PATH
+                // Đảm bảo relativePath không có dấu / thừa ở đầu
+                const cleanedRelativePath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
+                const fullResourceUrl = BASE_PATH + cleanedRelativePath;
 
                 // 1. Lấy dữ liệu PDF bằng fetch
                 const response = await fetch(fullResourceUrl);
@@ -451,7 +474,7 @@
                 // Sử dụng Object URL để nhúng vào iframe
                 pdfViewer.src = currentPdfBlobUrl; 
 
-                // Kích hoạt nút chuyển trang để chạy hiệu ứng 3D
+                // Gắn sự kiện lật trang
                 nextPageButton.onclick = () => handlePageFlip('next');
                 prevPageButton.onclick = () => handlePageFlip('prev');
                 
@@ -463,7 +486,7 @@
                     <div class="h-full flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
                         <i class="fas fa-exclamation-triangle text-red-500 text-6xl mb-4"></i>
                         <h3 class="text-xl font-bold text-red-700 mb-2">LỖI TẢI TÀI LIỆU</h3>
-                        <p class="text-gray-600 mb-4">Không thể tải tệp PDF: ${relativePath}. Vui lòng kiểm tra file đã được tải lên thư mục **pdf/** trên GitHub chưa. Chi tiết lỗi: ${error.message}</p>
+                        <p class="text-gray-600 mb-4">Không thể tải tệp PDF. Vui lòng kiểm tra file đã được tải lên thư mục **pdf/** trên GitHub chưa. Chi tiết lỗi: ${error.message}</p>
                         <button onclick="goBackToMenu()" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 hover:bg-red-700 shadow-xl">
                             Trở về Menu
                         </button>
