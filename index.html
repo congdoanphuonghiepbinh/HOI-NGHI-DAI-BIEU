@@ -35,17 +35,19 @@
         .flip-container {
             width: 100%;
             max-width: 900px;
-            height: 80vh; 
-            min-height: 550px;
+            height: auto; /* Tự động điều chỉnh chiều cao theo nội dung */
+            min-height: 70vh; /* Chiều cao tối thiểu */
             perspective: 1500px; 
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.8s ease-in-out; /* Đã tăng tốc nhẹ */
+            transition: transform 0.8s ease-in-out; 
             transform-origin: center right; 
         }
-
+        
         .flip-active {
             transform: translateX(-100%) rotateY(-180deg);
+            height: 80vh; /* Cố định chiều cao khi lật để hiệu ứng 3D hoạt động */
+            min-height: 550px;
         }
 
         .scene {
@@ -58,13 +60,15 @@
             align-items: center;
             justify-content: flex-start;
             padding-bottom: 50px;
-            overflow-y: auto; 
         }
-
+        
         /* Front Face (Menu) */
         .menu-scene {
             z-index: 2;
             padding-top: 20px;
+            /* Đảm bảo menu cuộn được nếu quá dài */
+            overflow-y: auto; 
+            height: auto;
         }
 
         /* Back Face (Document Reader) */
@@ -165,6 +169,7 @@
         /* ------------------------------------- */
         .doc-viewer {
             width: 100%;
+            /* Tính toán lại chiều cao để vừa vặn trong scene 2 */
             height: calc(100% - 70px); 
             background-color: white;
             border-radius: 8px;
@@ -176,13 +181,11 @@
             height: 100%; 
             border: none;
         }
-
-        /* Responsive adjustments for the flip container */
+        
+        /* Cố định menu header trên mobile */
         @media (max-width: 900px) {
-            .flip-container {
-                width: 95%;
-                min-height: 450px;
-                height: 70vh;
+            .flip-active {
+                height: 90vh; /* Tăng chiều cao khi lật trên mobile */
             }
         }
     </style>
@@ -300,16 +303,19 @@
     </div>
 
     <script>
-        // --- CHỨC NĂNG TỰ ĐỘNG XÁC ĐỊNH BASE_PATH CHO GITHUB PAGES ---
+        // --- CHỨC NĂNG TỰ ĐỘNG XÁC ĐỊNH BASE_PATH CHO GITHUB PAGES (Tối ưu nhất) ---
         function getBasePath() {
-            const pathname = window.location.pathname;
-            // Tìm kiếm tên Repository: /TÊN_NGƯỜI_DÙNG/TÊN_REPO/index.html -> lấy /TÊN_REPO/
-            const parts = pathname.split('/').filter(p => p.length > 0);
-            if (parts.length > 1 && window.location.hostname.endsWith('github.io')) {
-                // Đây là dạng https://username.github.io/repo-name/
-                return '/' + parts[0] + '/';
+            const pathParts = window.location.pathname.split('/').filter(p => p.length > 0);
+            
+            if (window.location.hostname.endsWith('github.io') && pathParts.length > 0) {
+                // Trên GitHub Pages (username.github.io/repo-name/)
+                // BASE_PATH sẽ là /repo-name/
+                return '/' + pathParts[0] + '/';
+            } else if (window.location.hostname.endsWith('github.io') && pathParts.length === 0) {
+                 // Trường hợp đặc biệt: Custom domain trên GitHub Pages (congdoanphuonghiepbinh.github.io)
+                 return '/';
             }
-            // Nếu là dạng Custom Domain (hoặc chạy local), Base Path là /
+            // Môi trường Local hoặc Hosting truyền thống
             return '/';
         }
 
@@ -331,7 +337,7 @@
 
             // Fallback nếu đường dẫn tuyệt đối vẫn lỗi (chuyển sang đường dẫn tương đối)
             bannerImage.onerror = function() {
-                this.src = "./assets/Picture1.png";
+                this.src = "assets/Picture1.png"; // Sử dụng đường dẫn tương đối không có dấu chấm (cách tốt nhất)
                 this.onerror = null; 
             }
         }
@@ -356,18 +362,22 @@
                 
                 // 3. Cập nhật nội dung
                 docTitle.textContent = title;
+                // Cố gắng sử dụng URL.createObjectURL cho iframe
                 pdfViewer.src = pdfUrl + '#toolbar=0&navpanes=0&scrollbar=0'; 
                 
                 // 4. Kích hoạt hiệu ứng lật trang 3D
+                // Điều chỉnh chiều cao của container khi lật
+                const currentHeight = document.documentElement.clientHeight * 0.9; // Lấy 90% chiều cao màn hình
+                flipContainer.style.height = `${currentHeight}px`;
+                flipContainer.style.minHeight = `${Math.min(currentHeight, 550)}px`;
                 flipContainer.classList.add('flip-active');
                 
             } catch (error) {
                 console.error("Lỗi tải PDF:", error);
-                alert(`LỖI TẢI TÀI LIỆU: ${error.message}.`);
                 
-                // Cung cấp tùy chọn mở tab mới
+                // Cung cấp tùy chọn mở tab mới làm fallback, sử dụng đường dẫn tuyệt đối
                 const fallbackUrl = window.location.origin + BASE_PATH + relativePath;
-                if(confirm("Có lỗi xảy ra khi tải tài liệu. Bạn có muốn mở tài liệu này trong tab mới không?")) {
+                if(confirm(`LỖI TẢI TÀI LIỆU (${error.message}). Bạn có muốn mở tài liệu này trong tab mới không?`)) {
                      window.open(fallbackUrl, '_blank');
                 }
             }
@@ -387,11 +397,14 @@
             // 1. Lật trang 3D ngược lại
             flipContainer.classList.remove('flip-active');
             
-            // 2. Xóa nội dung PDF Viewer sau khi quay lại để giải phóng bộ nhớ
+            // 2. Khôi phục chiều cao linh hoạt cho menu chính
             setTimeout(() => {
+                flipContainer.style.height = 'auto';
+                flipContainer.style.minHeight = '70vh';
+
+                // Dọn dẹp PDF viewer
                 const currentBlobUrl = pdfViewer.src;
                 pdfViewer.src = ''; 
-                // Giải phóng Blob URL để tiết kiệm bộ nhớ
                 if (currentBlobUrl.startsWith('blob:')) {
                     URL.revokeObjectURL(currentBlobUrl);
                 }
