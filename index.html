@@ -31,7 +31,7 @@
             overflow-x: hidden; 
         }
 
-        /* ẨN NỘI DUNG CUỘN KHI ĐANG Ở CHẾ ĐỘ ĐỌC TÀI LIỆU */
+        /* FIX: ẨN NỘI DUNG CUỘN VÀ CỐ ĐỊNH TRANG KHI ĐANG Ở CHẾ ĐỘ ĐỌC TÀI LIỆU */
         body.book-active {
             overflow: hidden;
             height: 100vh;
@@ -120,18 +120,18 @@
         /* BOOK READER STYLING */
         /* ------------------------------------- */
         #bookReader {
-            position: fixed; /* FIX Vấn đề cố định trang trên mobile */
+            position: fixed; 
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%; /* FIX Vấn đề không show hết giao diện */
+            height: 100%; /* FIX: Chiếm 100% viewport */
             display: none; 
             flex-direction: column;
             align-items: center;
             padding: 10px;
-            background-color: rgba(253, 250, 229, 0.98); /* Nền vàng nhạt mờ */
-            z-index: 1000; /* Đặt lên trên cùng */
-            overflow-y: auto; 
+            background-color: rgba(253, 250, 229, 0.98); 
+            z-index: 1000; 
+            overflow-y: hidden; /* Ngăn cuộn toàn bộ trang đọc */
         }
 
         .book-control-top {
@@ -139,7 +139,7 @@
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             padding: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 10px; /* Giảm margin */
             width: 100%;
             display: flex;
             justify-content: space-between;
@@ -151,9 +151,9 @@
         .book-control-bottom {
             display: flex;
             justify-content: center;
-            gap: 1.5rem; /* gap-6 */
-            margin-top: 20px;
-            padding-bottom: 20px;
+            gap: 1.5rem;
+            margin-top: 10px; /* Giảm margin */
+            padding-bottom: 10px;
         }
         
         /* Nút chuyển trang nhỏ gọn */
@@ -171,10 +171,10 @@
             @apply bg-gray-200 text-gray-500 cursor-not-allowed;
         }
 
+        /* Thay đổi kích thước Book Container để chiếm không gian linh hoạt còn lại */
         .book-container {
-            /* Giảm width/height cố định để linh hoạt hơn */
             width: 95%; 
-            height: 80%;
+            flex-grow: 1; /* Cho phép nó chiếm phần còn lại của màn hình */
             position: relative;
             perspective: 1500px;
             transform-style: preserve-3d;
@@ -182,7 +182,7 @@
             border: 1px solid #ccc;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
             max-width: var(--book-width);
-            max-height: var(--book-height);
+            max-height: calc(100vh - 150px); /* Tối đa hóa chiều cao trên mobile */
         }
         
         /* Cấu trúc Trang Lật 3D */
@@ -193,7 +193,7 @@
             width: 100%; 
             height: 100%;
             transform-origin: left;
-            transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Giảm thời gian để giảm lag */
+            transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             background-color: white;
             border-left: 1px solid #ddd;
             display: flex;
@@ -501,7 +501,7 @@
         function goBackToMenu() {
             // Thu hồi Blob URL
             if (currentPdfBlobUrl) {
-                URL.revokeObjectURL(currentPdfBlobUrl);
+                URL.revokeObjectURL(currentPdfPdfUrl);
                 currentPdfBlobUrl = null;
             }
             
