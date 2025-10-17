@@ -40,7 +40,7 @@
             perspective: 1500px; 
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.8s ease-in-out;
+            transition: transform 0.8s ease-in-out; /* Đã tăng tốc nhẹ */
             transform-origin: center right; 
         }
 
@@ -201,8 +201,8 @@
         <!-- FACE 1: MAIN MENU -->
         <div class="scene menu-scene w-full max-w-4xl px-4" id="mainMenu">
             <div class="banner-container">
-                <img src="assets/Picture1.png" alt="Banner Hội Nghị Đại Biểu Công Đoàn Phường Hiệp Bình" class="banner-image" 
-                     onerror="this.src='https://placehold.co/900x450/fff1d4/333?text=BANNER+CH%C3%8DNH+TH%E1%BB%A8C+B%E1%BB%8A+L%E1%BB%96I'">
+                <!-- Banner Image - Đã sửa lỗi đường dẫn tĩnh -->
+                <img id="bannerImage" src="" alt="Banner Hội Nghị Đại Biểu Công Đoàn Phường Hiệp Bình" class="banner-image">
             </div>
 
             <div class="menu-grid w-full">
@@ -300,22 +300,47 @@
     </div>
 
     <script>
+        // --- CẤU HÌNH ĐƯỜNG DẪN GỐC CHO GITHUB PAGES ---
+        // Lấy tên Repository từ URL để tạo đường dẫn tuyệt đối chính xác
+        const pathname = window.location.pathname;
+        const repoNameMatch = pathname.match(/^\/([^/]+)/);
+        // Nếu là Github Pages, BASE_PATH sẽ là /TÊN_REPO/, nếu không là /
+        const BASE_PATH = repoNameMatch ? `/${repoNameMatch[1]}/` : '/';
+
         // Khởi tạo các biến DOM
         const flipContainer = document.getElementById('flipContainer');
         const pdfViewer = document.getElementById('pdfViewer');
         const docTitle = document.getElementById('docTitle');
         const backButton = document.getElementById('backButton');
         const menuItems = document.querySelectorAll('.document-card'); 
+        const bannerImage = document.getElementById('bannerImage');
+        
+        // --- XỬ LÝ BANNER ---
+        function loadBanner() {
+            // Thử tải bằng đường dẫn tuyệt đối của Repository
+            const fullBannerPath = BASE_PATH + "assets/Picture1.png";
+            bannerImage.src = fullBannerPath;
+
+            // Nếu tải thất bại, thử đường dẫn tương đối (dành cho môi trường dev/root)
+            bannerImage.onerror = function() {
+                this.src = "./assets/Picture1.png";
+                this.onerror = null; // Ngăn lặp vô hạn nếu cả hai đều lỗi
+                console.warn("Sử dụng đường dẫn tương đối cho banner.");
+            }
+        }
         
         // --- CHỨC NĂNG CHÍNH: LẬT TRANG VÀ TẢI PDF ---
         
         // Hàm tải và hiển thị PDF
-        async function loadAndFlipToPDF(url, title) {
+        async function loadAndFlipToPDF(relativePath, title) {
+            // Xây dựng URL đầy đủ bằng cách sử dụng đường dẫn cơ sở
+            const fullUrl = BASE_PATH + relativePath; 
+            
             try {
-                // 1. Lấy dữ liệu PDF bằng fetch (đáng tin cậy hơn)
-                const response = await fetch(url);
+                // 1. Lấy dữ liệu PDF bằng fetch
+                const response = await fetch(fullUrl);
                 if (!response.ok) {
-                    throw new Error('Không thể tải tài liệu: ' + response.statusText);
+                    throw new Error(`Tệp ${relativePath} không tìm thấy (Lỗi ${response.status}). Vui lòng kiểm tra tên tệp.`);
                 }
                 const blob = await response.blob();
                 
@@ -324,6 +349,7 @@
                 
                 // 3. Cập nhật nội dung
                 docTitle.textContent = title;
+                // Cố gắng sử dụng URL.createObjectURL cho iframe
                 pdfViewer.src = pdfUrl + '#toolbar=0&navpanes=0&scrollbar=0'; 
                 
                 // 4. Lật trang 3D
@@ -331,16 +357,22 @@
                 
             } catch (error) {
                 console.error("Lỗi tải PDF:", error);
-                alert(`Không thể tải tài liệu. Vui lòng kiểm tra lại đường dẫn file PDF (${url}).`);
+                alert(`LỖI TẢI TÀI LIỆU: ${error.message}.`);
+                
+                // Nếu lỗi, cố gắng chuyển sang chế độ tải mở tab mới làm fallback
+                const fallbackUrl = window.location.origin + BASE_PATH + relativePath;
+                if(confirm("Có lỗi xảy ra khi tải tài liệu. Bạn có muốn mở tài liệu này trong tab mới không?")) {
+                     window.open(fallbackUrl, '_blank');
+                }
             }
         }
 
         // Gắn sự kiện cho các menu tài liệu
         menuItems.forEach(item => {
             item.addEventListener('click', function() {
-                const url = this.getAttribute('data-doc-url');
+                const relativePath = this.getAttribute('data-doc-url');
                 const title = this.getAttribute('data-doc-title');
-                loadAndFlipToPDF(url, title);
+                loadAndFlipToPDF(relativePath, title);
             });
         });
 
@@ -351,13 +383,17 @@
             
             // 2. Xóa nội dung PDF Viewer sau khi quay lại để giải phóng bộ nhớ
             setTimeout(() => {
+                const currentBlobUrl = pdfViewer.src;
                 pdfViewer.src = ''; 
                 // Giải phóng Blob URL để tiết kiệm bộ nhớ
-                if (pdfViewer.src.startsWith('blob:')) {
-                    URL.revokeObjectURL(pdfViewer.src);
+                if (currentBlobUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(currentBlobUrl);
                 }
             }, 800); // Đợi hiệu ứng 3D kết thúc
         });
+
+        // Khởi động
+        window.onload = loadBanner;
 
     </script>
 </body>
