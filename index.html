@@ -300,12 +300,20 @@
     </div>
 
     <script>
-        // --- CẤU HÌNH ĐƯỜNG DẪN GỐC CHO GITHUB PAGES ---
-        // Lấy tên Repository từ URL để tạo đường dẫn tuyệt đối chính xác
-        const pathname = window.location.pathname;
-        const repoNameMatch = pathname.match(/^\/([^/]+)/);
-        // Nếu là Github Pages, BASE_PATH sẽ là /TÊN_REPO/, nếu không là /
-        const BASE_PATH = repoNameMatch ? `/${repoNameMatch[1]}/` : '/';
+        // --- CHỨC NĂNG TỰ ĐỘNG XÁC ĐỊNH BASE_PATH CHO GITHUB PAGES ---
+        function getBasePath() {
+            const pathname = window.location.pathname;
+            // Tìm kiếm tên Repository: /TÊN_NGƯỜI_DÙNG/TÊN_REPO/index.html -> lấy /TÊN_REPO/
+            const parts = pathname.split('/').filter(p => p.length > 0);
+            if (parts.length > 1 && window.location.hostname.endsWith('github.io')) {
+                // Đây là dạng https://username.github.io/repo-name/
+                return '/' + parts[0] + '/';
+            }
+            // Nếu là dạng Custom Domain (hoặc chạy local), Base Path là /
+            return '/';
+        }
+
+        const BASE_PATH = getBasePath();
 
         // Khởi tạo các biến DOM
         const flipContainer = document.getElementById('flipContainer');
@@ -317,15 +325,14 @@
         
         // --- XỬ LÝ BANNER ---
         function loadBanner() {
-            // Thử tải bằng đường dẫn tuyệt đối của Repository
+            // Tải Banner: sử dụng đường dẫn tuyệt đối chính xác
             const fullBannerPath = BASE_PATH + "assets/Picture1.png";
             bannerImage.src = fullBannerPath;
 
-            // Nếu tải thất bại, thử đường dẫn tương đối (dành cho môi trường dev/root)
+            // Fallback nếu đường dẫn tuyệt đối vẫn lỗi (chuyển sang đường dẫn tương đối)
             bannerImage.onerror = function() {
                 this.src = "./assets/Picture1.png";
-                this.onerror = null; // Ngăn lặp vô hạn nếu cả hai đều lỗi
-                console.warn("Sử dụng đường dẫn tương đối cho banner.");
+                this.onerror = null; 
             }
         }
         
@@ -349,17 +356,16 @@
                 
                 // 3. Cập nhật nội dung
                 docTitle.textContent = title;
-                // Cố gắng sử dụng URL.createObjectURL cho iframe
                 pdfViewer.src = pdfUrl + '#toolbar=0&navpanes=0&scrollbar=0'; 
                 
-                // 4. Lật trang 3D
+                // 4. Kích hoạt hiệu ứng lật trang 3D
                 flipContainer.classList.add('flip-active');
                 
             } catch (error) {
                 console.error("Lỗi tải PDF:", error);
                 alert(`LỖI TẢI TÀI LIỆU: ${error.message}.`);
                 
-                // Nếu lỗi, cố gắng chuyển sang chế độ tải mở tab mới làm fallback
+                // Cung cấp tùy chọn mở tab mới
                 const fallbackUrl = window.location.origin + BASE_PATH + relativePath;
                 if(confirm("Có lỗi xảy ra khi tải tài liệu. Bạn có muốn mở tài liệu này trong tab mới không?")) {
                      window.open(fallbackUrl, '_blank');
