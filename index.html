@@ -89,6 +89,10 @@
             cursor: pointer;
             user-select: none; 
             min-height: 120px; 
+            /* FIX: Đảm bảo chữ menu căn giữa đều trên dưới */
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
         }
 
         .menu-card:hover {
@@ -152,11 +156,17 @@
             margin-bottom: 5px; 
             width: 100%;
             display: flex;
-            justify-content: space-between;
+            justify-content: center; /* FIX: Căn giữa tiêu đề */
             align-items: center;
             flex-wrap: nowrap;
             max-width: 900px;
             box-sizing: border-box;
+        }
+
+        /* FIX: Điều chỉnh lại căn giữa của nút Trở về và Tiêu đề - ĐÃ XÓA NÚT THỪA */
+        #docTitle {
+            text-align: center;
+            flex-grow: 1; /* Cho phép tiêu đề mở rộng */
         }
 
         .book-control-bottom {
@@ -169,6 +179,8 @@
             padding: 10px 0;
             align-items: center;
             box-sizing: border-box;
+            width: 95%; /* Match book-container width */
+            max-width: 900px;
         }
         
         /* Nút chuyển trang nhỏ gọn */
@@ -332,12 +344,8 @@
     <!-- BOOK READER SCREEN (Hidden by default) -->
     <div id="bookReader" class="w-full max-w-4xl px-4 flex-col items-center hidden">
         
-        <!-- CONTROL TOP (Nút Trở Về và Tiêu đề) -->
+        <!-- CONTROL TOP (Tiêu đề) -->
         <div class="book-control-top">
-            <button id="backButton" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 hover:bg-red-700 shadow-xl flex items-center">
-                <i class="fas fa-arrow-left mr-2"></i>
-                TRỞ VỀ MENU CHÍNH
-            </button>
             <h2 id="docTitle" class="text-xl font-extrabold text-red-700 text-center flex-1 mx-4 truncate">TÊN TÀI LIỆU</h2>
         </div>
 
@@ -361,11 +369,17 @@
             
         </div>
         
-        <!-- CONTROL BOTTOM (Nút Trang Trước/Sau - ĐÃ DI CHUYỂN XUỐNG DƯỚI) -->
+        <!-- CONTROL BOTTOM (Nút Trang Trước/Sau & Nút Trở Về Nhỏ) -->
         <div class="book-control-bottom w-full">
             <button id="prevPage" class="page-nav-icon">
                 <i class="fas fa-chevron-left"></i>
             </button>
+
+            <!-- FIX: Nút Trở về nhỏ gọn, căn giữa -->
+            <button id="backButtonSmall" class="page-nav-icon">
+                <i class="fas fa-undo"></i>
+            </button>
+
              <button id="nextPage" class="page-nav-icon">
                 <i class="fas fa-chevron-right"></i>
             </button>
@@ -396,7 +410,6 @@
         const mainMenuFooter = document.getElementById('mainMenuFooter');
         const bookReader = document.getElementById('bookReader');
         const docTitle = document.getElementById('docTitle');
-        const backButton = document.getElementById('backButton');
         const menuItems = document.querySelectorAll('.document-card'); 
         const bannerImage = document.getElementById('bannerImage');
 
@@ -405,8 +418,8 @@
         const pdfViewer = document.getElementById('pdfViewer');
         const nextPageButton = document.getElementById('nextPage');
         const prevPageButton = document.getElementById('prevPage');
+        const backButtonSmall = document.getElementById('backButtonSmall');
         
-        let currentPdfBlobUrl = null; 
         let isFlipping = false;
         
         // --- XỬ LÝ BANNER ---
@@ -416,7 +429,8 @@
 
             // Fallback nếu đường dẫn tuyệt đối vẫn lỗi
             bannerImage.onerror = function() {
-                this.src = BASE_PATH + "assets/Picture1.png"; // Thử lại với BASE_PATH
+                // Thử tải bằng đường dẫn tương đối (chỉ trong trường hợp development/localhost)
+                this.src = "assets/Picture1.png";
                 this.onerror = null; 
             }
         }
@@ -445,7 +459,8 @@
                 prevPageButton.disabled = false;
             }, 300); // Tốc độ lật nhanh (0.3s)
             
-            // NOTE: Chỉ là hiệu ứng mô phỏng
+            // NOTE: Chỉ là hiệu ứng mô phỏng. Để lật nội dung PDF, cần tương tác với iframe.
+            // Do PDF.js Viewer có giao diện riêng, việc lật trang thực tế sẽ phải thực hiện bằng nút của Viewer.
         }
 
         // Hàm tải và hiển thị PDF (Sử dụng PDF.js Viewer)
@@ -460,11 +475,11 @@
             document.body.classList.add('book-active'); 
 
             try {
-                // Xây dựng URL an toàn bằng BASE_PATH
+                // Xây dựng URL tài liệu công khai (Sử dụng đường dẫn tuyệt đối đã FIX)
                 const cleanedRelativePath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
                 const fullResourceUrl = BASE_PATH + cleanedRelativePath;
 
-                // FIX: Sử dụng PDF.js Viewer (Web Viewer)
+                // FIX: Sử dụng PDF.js Viewer (Web Viewer) - đảm bảo hiển thị ổn định
                 // Cấu trúc URL: https://mozilla.github.io/pdf.js/web/viewer.html?file=<URL_FILE_PUBLIC>
                 const viewerUrl = PDFJS_VIEWER_URL + encodeURIComponent(fullResourceUrl);
                 
@@ -474,7 +489,7 @@
                 // Sử dụng PDF.js Viewer URL
                 pdfViewer.src = viewerUrl; 
 
-                // Gắn sự kiện lật trang
+                // Gắn sự kiện lật trang mô phỏng
                 nextPageButton.onclick = () => handlePageFlip('next');
                 prevPageButton.onclick = () => handlePageFlip('prev');
                 
@@ -495,10 +510,6 @@
 
         // Xử lý nút Trở về Menu Chính
         function goBackToMenu() {
-            if (currentPdfBlobUrl) {
-                URL.revokeObjectURL(currentPdfBlobUrl);
-                currentPdfBlobUrl = null;
-            }
             
             flipPage.classList.remove('flipped');
             document.body.classList.remove('book-active'); 
@@ -520,9 +531,9 @@
             });
         });
 
-        // Gắn sự kiện nút trở về
-        backButton.addEventListener('click', goBackToMenu);
-        
+        // Gắn sự kiện nút trở về nhỏ (CONTROL BOTTOM)
+        backButtonSmall.addEventListener('click', goBackToMenu);
+
         // Khởi động
         window.onload = loadBanner;
 
