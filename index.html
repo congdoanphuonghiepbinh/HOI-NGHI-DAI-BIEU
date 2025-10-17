@@ -8,14 +8,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load Font Awesome for icons -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+    
+    <!-- FIX: PDF.js Viewer URL -->
+    <!-- Dùng bản Viewer công cộng của Mozilla để hiển thị PDF ổn định -->
+    <script>
+        const PDFJS_VIEWER_URL = "https://mozilla.github.io/pdf.js/web/viewer.html?file=";
+    </script>
+
     <style>
         :root {
             --primary-blue: #0056b3; /* Xanh Công Đoàn */
             --secondary-red: #cc0000; /* Đỏ tương tác */
             --soft-yellow: #fdfae5; /* Nền vàng nhạt */
             --text-color: #1a202c;
-            --book-width: 800px;
-            --book-height: 550px;
             --header-height: 70px; /* Chiều cao cố định cho control top */
             --footer-height: 70px; /* Chiều cao cố định cho control bottom */
         }
@@ -134,7 +139,7 @@
             padding: 10px;
             background-color: rgba(253, 250, 229, 1); 
             z-index: 1000; 
-            overflow-y: hidden; 
+            overflow-y: hidden; /* Ngăn cuộn chính của bookReader */
         }
 
         .book-control-top {
@@ -184,14 +189,15 @@
         /* FIX: Tối ưu hóa kích thước Book Container để chiếm không gian chính xác */
         .book-container {
             width: 95%; 
-            height: calc(100% - var(--header-height) - var(--footer-height) - 20px); /* 100% - top - bottom - margins */
+            /* Chiều cao tính toán: 100% viewport - header - footer - margins */
+            height: calc(100vh - var(--header-height) - var(--footer-height) - 20px); 
             position: relative;
             perspective: 1500px;
             transform-style: preserve-3d;
             margin: 0 auto;
             border: 1px solid #ccc;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            max-width: var(--book-width);
+            max-width: 900px;
             overflow: hidden; 
         }
         
@@ -203,7 +209,7 @@
             width: 100%; 
             height: 100%;
             transform-origin: left;
-            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Tăng tốc độ lật trang */
             background-color: white;
             border-left: 1px solid #ddd;
             display: flex;
@@ -373,17 +379,12 @@
             const pathname = window.location.pathname;
 
             if (hostname.endsWith('github.io')) {
-                // Trên GitHub Pages, đường dẫn cơ sở là tên repository
-                // Lấy tên repo từ pathname (thường là thành phần đầu tiên sau dấu /)
                 const pathParts = pathname.split('/').filter(p => p.length > 0);
                 const repoName = pathParts[0]; 
                 
-                // Trả về đường dẫn tuyệt đối đầy đủ
-                // Ví dụ: https://congdoanphuonghiepbinh.github.io/HOI-NGHI-DAI-BIEU/
+                // Trả về đường dẫn tuyệt đối đầy đủ: "https://<user>.github.io/<repo>/"
                 return `https://${hostname}/${repoName}/`;
             } else {
-                 // Trường hợp Localhost hoặc hosting khác
-                 // Trả về đường dẫn hiện tại (ví dụ: http://localhost:8080/)
                  return window.location.href.substring(0, window.location.href.lastIndexOf('/') + 1);
             }
         }
@@ -405,6 +406,7 @@
         const nextPageButton = document.getElementById('nextPage');
         const prevPageButton = document.getElementById('prevPage');
         
+        let currentPdfBlobUrl = null; 
         let isFlipping = false;
         
         // --- XỬ LÝ BANNER ---
@@ -419,7 +421,7 @@
             }
         }
 
-        // --- XỬ LÝ LẬT TRANG 3D VÀ ĐƯỜNG DẪN PDF ---
+        // --- HÀM MÔ PHỎNG LẬT TRANG 3D VÀ HIỂN THỊ PDF ---
         
         // Hàm mô phỏng hiệu ứng lật trang 3D
         function handlePageFlip(direction) {
@@ -441,13 +443,12 @@
                 isFlipping = false;
                 nextPageButton.disabled = false;
                 prevPageButton.disabled = false;
-            }, 400); // Giảm thời gian chờ lật trang xuống 0.4s để mượt hơn
+            }, 300); // Tốc độ lật nhanh (0.3s)
             
-            // NOTE: Vì không thể điều khiển trình xem PDF nội bộ, hiệu ứng này chỉ mang tính chất mô phỏng
-            // Việc cuộn trang bên trong iframe vẫn cần được thực hiện thủ công.
+            // NOTE: Chỉ là hiệu ứng mô phỏng
         }
 
-        // Hàm tải và hiển thị PDF
+        // Hàm tải và hiển thị PDF (Sử dụng PDF.js Viewer)
         async function loadAndShowPDF(relativePath, title) {
             
             docTitle.textContent = "Đang tải tài liệu...";
@@ -463,18 +464,15 @@
                 const cleanedRelativePath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
                 const fullResourceUrl = BASE_PATH + cleanedRelativePath;
 
-                // CHUYỂN SANG GOOGLE DOCS VIEWER (ỔN ĐỊNH NHẤT CHO IFRAME)
-                // Đảm bảo URL tệp là URL công khai của GitHub Pages
-                const githubFileUrl = fullResourceUrl;
-
-                // Tạo URL Google Viewer
-                const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(githubFileUrl)}&embedded=true`;
+                // FIX: Sử dụng PDF.js Viewer (Web Viewer)
+                // Cấu trúc URL: https://mozilla.github.io/pdf.js/web/viewer.html?file=<URL_FILE_PUBLIC>
+                const viewerUrl = PDFJS_VIEWER_URL + encodeURIComponent(fullResourceUrl);
                 
                 // 3. Cập nhật nội dung và tiêu đề
                 docTitle.textContent = title;
                 
-                // Sử dụng Google Viewer URL để nhúng vào iframe
-                pdfViewer.src = googleViewerUrl; 
+                // Sử dụng PDF.js Viewer URL
+                pdfViewer.src = viewerUrl; 
 
                 // Gắn sự kiện lật trang
                 nextPageButton.onclick = () => handlePageFlip('next');
@@ -483,38 +481,34 @@
             } catch (error) {
                 console.error("Lỗi tải PDF:", error);
                 
-                // Hiển thị lỗi ngay trên iframe
-                const errorHtml = `
-                    <div class="h-full w-full flex flex-col items-center justify-center bg-gray-50 p-8 text-center absolute top-0 left-0">
-                        <i class="fas fa-exclamation-triangle text-red-500 text-6xl mb-4"></i>
-                        <h3 class="text-xl font-bold text-red-700 mb-2">LỖI TẢI TÀI LIỆU</h3>
-                        <p class="text-gray-600 mb-4">Không thể tải tệp PDF. Vui lòng kiểm tra file đã được tải lên thư mục **pdf/** trên GitHub chưa. Chi tiết lỗi: ${error.message}</p>
-                        <button onclick="goBackToMenu()" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 hover:bg-red-700 shadow-xl">
-                            Trở về Menu
-                        </button>
-                    </div>
-                `;
-                pdfViewer.srcdoc = errorHtml;
+                // Hiện cuộn body khi quay lại menu
+                document.body.classList.remove('book-active'); 
+                bookReader.style.display = 'none';
+                mainMenu.style.display = 'flex';
                 
+                alert(`LỖI TẢI TÀI LIỆU: Không thể tải file. Vui lòng kiểm tra file đã được tải lên thư mục **pdf/** trên GitHub. Chi tiết lỗi: ${error.message}`);
+                
+                // Tự động trở về menu chính
+                goBackToMenu();
             }
         }
 
         // Xử lý nút Trở về Menu Chính
         function goBackToMenu() {
-            // Đặt lại trạng thái lật
+            if (currentPdfBlobUrl) {
+                URL.revokeObjectURL(currentPdfBlobUrl);
+                currentPdfBlobUrl = null;
+            }
+            
             flipPage.classList.remove('flipped');
-
-            // Hiện cuộn body khi quay lại menu
             document.body.classList.remove('book-active'); 
 
-            // Ẩn giao diện đọc, hiện menu chính
             bookReader.style.display = 'none';
             mainMenu.style.display = 'flex';
             mainMenuFooter.style.display = 'block';
 
-            // Dọn dẹp iframe
             pdfViewer.src = 'about:blank';
-            pdfViewer.srcdoc = ''; // Clear error content
+            pdfViewer.srcdoc = ''; 
         }
 
         // Gắn sự kiện cho các menu tài liệu
