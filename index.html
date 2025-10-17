@@ -16,6 +16,8 @@
             --text-color: #1a202c;
             --book-width: 800px;
             --book-height: 550px;
+            --header-height: 70px; /* Chiều cao cố định cho control top */
+            --footer-height: 70px; /* Chiều cao cố định cho control bottom */
         }
 
         /* ĐIỀU CHỈNH FONT THEO YÊU CẦU: SỬ DỤNG FONT TAHOMA PHỔ BIẾN */
@@ -120,40 +122,48 @@
         /* BOOK READER STYLING */
         /* ------------------------------------- */
         #bookReader {
-            position: fixed; 
+            /* FIX: Chuyển sang absolute để cố định và chiếm full màn hình trong phạm vi body.book-active */
+            position: absolute; 
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%; /* FIX: Chiếm 100% viewport */
+            height: 100%; /* Chiếm 100% viewport */
             display: none; 
             flex-direction: column;
             align-items: center;
             padding: 10px;
-            background-color: rgba(253, 250, 229, 0.98); 
+            background-color: rgba(253, 250, 229, 1); 
             z-index: 1000; 
-            overflow-y: hidden; /* Ngăn cuộn toàn bộ trang đọc */
+            overflow-y: hidden; 
         }
 
         .book-control-top {
+            /* FIX: Thiết lập chiều cao cứng để tính toán phần còn lại của màn hình */
+            height: var(--header-height); 
             background-color: white;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            margin-bottom: 10px; /* Giảm margin */
+            padding: 10px 15px; 
+            margin-bottom: 5px; 
             width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             max-width: 900px;
+            box-sizing: border-box;
         }
 
         .book-control-bottom {
+            /* FIX: Thiết lập chiều cao cứng để tính toán phần còn lại của màn hình */
+            height: var(--footer-height); 
             display: flex;
             justify-content: center;
-            gap: 1.5rem;
-            margin-top: 10px; /* Giảm margin */
-            padding-bottom: 10px;
+            gap: 1.5rem; 
+            margin-top: 5px; 
+            padding: 10px 0;
+            align-items: center;
+            box-sizing: border-box;
         }
         
         /* Nút chuyển trang nhỏ gọn */
@@ -171,10 +181,10 @@
             @apply bg-gray-200 text-gray-500 cursor-not-allowed;
         }
 
-        /* Thay đổi kích thước Book Container để chiếm không gian linh hoạt còn lại */
+        /* FIX: Tối ưu hóa kích thước Book Container để chiếm không gian chính xác */
         .book-container {
             width: 95%; 
-            flex-grow: 1; /* Cho phép nó chiếm phần còn lại của màn hình */
+            height: calc(100% - var(--header-height) - var(--footer-height) - 20px); /* 100% - top - bottom - margins */
             position: relative;
             perspective: 1500px;
             transform-style: preserve-3d;
@@ -182,7 +192,7 @@
             border: 1px solid #ccc;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
             max-width: var(--book-width);
-            max-height: calc(100vh - 150px); /* Tối đa hóa chiều cao trên mobile */
+            overflow: hidden; 
         }
         
         /* Cấu trúc Trang Lật 3D */
@@ -193,7 +203,7 @@
             width: 100%; 
             height: 100%;
             transform-origin: left;
-            transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
             background-color: white;
             border-left: 1px solid #ddd;
             display: flex;
@@ -370,7 +380,7 @@
                 
                 // Trả về đường dẫn tuyệt đối đầy đủ
                 // Ví dụ: https://congdoanphuonghiepbinh.github.io/HOI-NGHI-DAI-BIEU/
-                return `${window.location.protocol}//${hostname}/${repoName}/`;
+                return `https://${hostname}/${repoName}/`;
             } else {
                  // Trường hợp Localhost hoặc hosting khác
                  // Trả về đường dẫn hiện tại (ví dụ: http://localhost:8080/)
@@ -395,7 +405,6 @@
         const nextPageButton = document.getElementById('nextPage');
         const prevPageButton = document.getElementById('prevPage');
         
-        let currentPdfBlobUrl = null; 
         let isFlipping = false;
         
         // --- XỬ LÝ BANNER ---
@@ -432,7 +441,7 @@
                 isFlipping = false;
                 nextPageButton.disabled = false;
                 prevPageButton.disabled = false;
-            }, 600); // Giảm thời gian chờ lật trang để tăng tốc độ phản hồi
+            }, 400); // Giảm thời gian chờ lật trang xuống 0.4s để mượt hơn
             
             // NOTE: Vì không thể điều khiển trình xem PDF nội bộ, hiệu ứng này chỉ mang tính chất mô phỏng
             // Việc cuộn trang bên trong iframe vẫn cần được thực hiện thủ công.
@@ -454,25 +463,18 @@
                 const cleanedRelativePath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
                 const fullResourceUrl = BASE_PATH + cleanedRelativePath;
 
-                // 1. Lấy dữ liệu PDF bằng fetch
-                const response = await fetch(fullResourceUrl);
-                
-                if (!response.ok) {
-                    throw new Error(`Tệp ${relativePath} không tìm thấy (Lỗi ${response.status}).`);
-                }
-                const blob = await response.blob();
-                
-                // 2. Tạo URL cục bộ từ Blob (cách tối ưu cho iframe)
-                if (currentPdfBlobUrl) {
-                    URL.revokeObjectURL(currentPdfBlobUrl);
-                }
-                currentPdfBlobUrl = URL.createObjectURL(blob);
+                // CHUYỂN SANG GOOGLE DOCS VIEWER (ỔN ĐỊNH NHẤT CHO IFRAME)
+                // Đảm bảo URL tệp là URL công khai của GitHub Pages
+                const githubFileUrl = fullResourceUrl;
+
+                // Tạo URL Google Viewer
+                const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(githubFileUrl)}&embedded=true`;
                 
                 // 3. Cập nhật nội dung và tiêu đề
                 docTitle.textContent = title;
                 
-                // Sử dụng Object URL để nhúng vào iframe
-                pdfViewer.src = currentPdfBlobUrl; 
+                // Sử dụng Google Viewer URL để nhúng vào iframe
+                pdfViewer.src = googleViewerUrl; 
 
                 // Gắn sự kiện lật trang
                 nextPageButton.onclick = () => handlePageFlip('next');
@@ -483,7 +485,7 @@
                 
                 // Hiển thị lỗi ngay trên iframe
                 const errorHtml = `
-                    <div class="h-full flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
+                    <div class="h-full w-full flex flex-col items-center justify-center bg-gray-50 p-8 text-center absolute top-0 left-0">
                         <i class="fas fa-exclamation-triangle text-red-500 text-6xl mb-4"></i>
                         <h3 class="text-xl font-bold text-red-700 mb-2">LỖI TẢI TÀI LIỆU</h3>
                         <p class="text-gray-600 mb-4">Không thể tải tệp PDF. Vui lòng kiểm tra file đã được tải lên thư mục **pdf/** trên GitHub chưa. Chi tiết lỗi: ${error.message}</p>
@@ -499,12 +501,6 @@
 
         // Xử lý nút Trở về Menu Chính
         function goBackToMenu() {
-            // Thu hồi Blob URL
-            if (currentPdfBlobUrl) {
-                URL.revokeObjectURL(currentPdfPdfUrl);
-                currentPdfBlobUrl = null;
-            }
-            
             // Đặt lại trạng thái lật
             flipPage.classList.remove('flipped');
 
