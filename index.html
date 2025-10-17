@@ -30,6 +30,13 @@
             padding: 0 0 20px 0;
             overflow-x: hidden; 
         }
+
+        /* ẨN NỘI DUNG CUỘN KHI ĐANG Ở CHẾ ĐỘ ĐỌC TÀI LIỆU */
+        body.book-active {
+            overflow: hidden;
+            height: 100vh;
+            padding: 0;
+        }
         
         /* ------------------------------------- */
         /* MENU & CARD STYLING */
@@ -113,14 +120,18 @@
         /* BOOK READER STYLING */
         /* ------------------------------------- */
         #bookReader {
-            display: none; 
+            position: fixed; /* FIX Vấn đề cố định trang trên mobile */
+            top: 0;
+            left: 0;
             width: 100%;
-            padding: 20px 0;
-            max-width: 900px;
-            /* FIX: Đảm bảo có thể cuộn trên di động */
+            height: 100%; /* FIX Vấn đề không show hết giao diện */
+            display: none; 
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            background-color: rgba(253, 250, 229, 0.98); /* Nền vàng nhạt mờ */
+            z-index: 1000; /* Đặt lên trên cùng */
             overflow-y: auto; 
-            max-height: 100vh; /* Sử dụng 100vh để chiếm toàn bộ màn hình xem */
-            box-sizing: border-box; /* Đảm bảo padding không làm tràn màn hình */
         }
 
         .book-control-top {
@@ -129,10 +140,12 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
             padding: 15px;
             margin-bottom: 20px;
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
+            max-width: 900px;
         }
 
         .book-control-bottom {
@@ -159,34 +172,19 @@
         }
 
         .book-container {
-            width: var(--book-width);
-            height: var(--book-height);
+            /* Giảm width/height cố định để linh hoạt hơn */
+            width: 95%; 
+            height: 80%;
             position: relative;
             perspective: 1500px;
             transform-style: preserve-3d;
             margin: 0 auto;
             border: 1px solid #ccc;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            max-width: var(--book-width);
+            max-height: var(--book-height);
         }
         
-        /* Chỉnh lại kích thước cho mobile */
-        @media (max-width: 900px) {
-            .book-control-top {
-                width: 100%;
-                padding: 10px;
-            }
-            .book-container {
-                width: 95vw;
-                height: 80vh;
-                max-height: 500px;
-            }
-        }
-        @media (min-width: 640px) {
-             .book-control-top {
-                flex-wrap: nowrap;
-             }
-        }
-
         /* Cấu trúc Trang Lật 3D */
         .page {
             position: absolute;
@@ -195,7 +193,7 @@
             width: 100%; 
             height: 100%;
             transform-origin: left;
-            transition: transform 1.2s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transition: transform 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Giảm thời gian để giảm lag */
             background-color: white;
             border-left: 1px solid #ddd;
             display: flex;
@@ -239,7 +237,7 @@
     <!-- MAIN MENU SCREEN -->
     <div id="mainMenu" class="w-full max-w-4xl px-4 flex flex-col items-center">
         <div class="banner-container">
-            <!-- Banner Image - Đã sửa lỗi đường dẫn tĩnh -->
+            <!-- Banner Image -->
             <img id="bannerImage" src="" alt="Banner Hội Nghị Đại Biểu Công Đoàn Phường Hiệp Bình" class="banner-image">
         </div>
 
@@ -434,7 +432,7 @@
                 isFlipping = false;
                 nextPageButton.disabled = false;
                 prevPageButton.disabled = false;
-            }, 1200); // Đợi chuyển đổi 1.2s kết thúc
+            }, 600); // Giảm thời gian chờ lật trang để tăng tốc độ phản hồi
             
             // NOTE: Vì không thể điều khiển trình xem PDF nội bộ, hiệu ứng này chỉ mang tính chất mô phỏng
             // Việc cuộn trang bên trong iframe vẫn cần được thực hiện thủ công.
@@ -447,10 +445,12 @@
             mainMenu.style.display = 'none';
             bookReader.style.display = 'flex'; 
             flipPage.classList.remove('flipped'); // Reset trạng thái lật
+            
+            // FIX: Ẩn cuộn body khi đang xem tài liệu
+            document.body.classList.add('book-active'); 
 
             try {
-                // FIX LỖI Invalid URL và LỖI TẢI: Xây dựng URL an toàn bằng BASE_PATH
-                // Đảm bảo relativePath không có dấu / thừa ở đầu
+                // Xây dựng URL an toàn bằng BASE_PATH
                 const cleanedRelativePath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
                 const fullResourceUrl = BASE_PATH + cleanedRelativePath;
 
@@ -507,6 +507,9 @@
             
             // Đặt lại trạng thái lật
             flipPage.classList.remove('flipped');
+
+            // Hiện cuộn body khi quay lại menu
+            document.body.classList.remove('book-active'); 
 
             // Ẩn giao diện đọc, hiện menu chính
             bookReader.style.display = 'none';
