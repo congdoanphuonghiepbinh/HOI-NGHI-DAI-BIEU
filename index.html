@@ -200,8 +200,17 @@
         }
 
         /* Ẩn các nút không cần thiết */
-        .book-control-bottom, .page {
+        .book-control-bottom {
             display: none !important;
+        }
+        
+        /* Nút nhỏ gọn Trở về */
+        .back-button-fixed {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem;
+            border-radius: 9999px; /* Tròn */
         }
 
 
@@ -294,7 +303,7 @@
         <!-- CONTROL TOP (Tiêu đề và Nút Trở về) -->
         <div class="book-control-top">
             <!-- Nút Trở về nhỏ gọn -->
-            <button id="backButtonSmall" class="p-2 rounded-full bg-red-600 text-white transition duration-300 hover:bg-red-700 shadow-md absolute left-4 top-1/2 transform -translate-y-1/2">
+            <button id="backButtonSmall" class="back-button-fixed bg-red-600 text-white transition duration-300 hover:bg-red-700 shadow-md">
                 <i class="fas fa-arrow-left"></i>
             </button>
             
@@ -371,16 +380,18 @@
             
             // Xây dựng URL tệp PDF an toàn (Sử dụng encodeURIComponent)
             const cleanedRelativePath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
-            const fullResourceUrl = BASE_PATH + cleanedRelativePath;
+            
+            // FIX: THAY THẾ KHOẢNG TRẮNG CÓ THỂ CÓ TRONG TÊN FILE BẰNG %20 ĐỂ ĐẢM BẢO TẢI ĐÚNG
+            const finalRelativePath = cleanedRelativePath.replace(/ /g, '%20');
+            
+            const fullResourceUrl = BASE_PATH + finalRelativePath;
             const encodedFileUrl = encodeURIComponent(fullResourceUrl);
 
             try {
                 // Kiểm tra tệp có tồn tại không trước khi nhúng (giúp debug tốt hơn)
-                const checkResponse = await fetch(fullResourceUrl, { method: 'HEAD' });
-                if (!checkResponse.ok) {
-                     throw new Error(`Mã lỗi: ${checkResponse.status}. Vui lòng kiểm tra tên tệp.`);
-                }
-
+                // LƯU Ý QUAN TRỌNG: Không thể dùng fetch/HEAD request với BASE_PATH trên mọi môi trường.
+                // Chúng ta sẽ bỏ qua bước check này để tránh lỗi CORS/Network và dựa vào PDF.js Viewer tự báo lỗi.
+                
                 // Sử dụng PDF.js Viewer (Web Viewer)
                 const viewerUrl = PDFJS_VIEWER_URL + encodedFileUrl;
                 
@@ -389,14 +400,14 @@
                 pdfViewer.src = viewerUrl; 
 
             } catch (error) {
+                // Lỗi này không nên xảy ra ở đây, nhưng nếu có thì hiển thị lỗi
                 console.error("Lỗi tải PDF:", error);
                 
-                // Hiển thị thông báo lỗi ngay trên Viewer
                 const errorHtml = `
                     <div class="h-full flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
                         <i class="fas fa-exclamation-triangle text-red-500 text-6xl mb-4"></i>
                         <h3 class="text-xl font-bold text-red-700 mb-2">LỖI TẢI TÀI LIỆU: TỆP KHÔNG HỢP LỆ</h3>
-                        <p class="text-gray-600 mb-4">Không thể tải tệp (${relativePath}). ${error.message} <br> Vui lòng kiểm tra: 1. Tên tệp có khớp với tên file trên GitHub không? 2. Tệp PDF có bị lỗi hỏng không?</p>
+                        <p class="text-gray-600 mb-4">Lỗi xảy ra trong quá trình nhúng. Vui lòng kiểm tra lại **tên tệp gốc** trên GitHub Pages. Tên tệp phải là: **${relativePath.replace('pdf/', '')}**</p>
                         <button onclick="goBackToMenu()" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 hover:bg-red-700 shadow-xl">
                             Trở về Menu
                         </button>
