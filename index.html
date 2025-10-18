@@ -254,37 +254,37 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                 <!-- Hàng 1 -->
-                <div data-doc-title="CHƯƠNG TRÌNH HỘI NGHỊ" data-doc-url="pdf/ChuongTrinh.pdf" class="menu-card document-card">
+                <div data-doc-title="CHƯƠNG TRÌNH HỘI NGHỊ" data-doc-url="pdf/CHUONGTRINH.PDF" class="menu-card document-card">
                     <i class="fas fa-calendar-alt menu-icon"></i>
                     CHƯƠNG TRÌNH HỘI NGHỊ
                 </div>
-                <div data-doc-title="QUY CHẾ HỘI NGHỊ" data-doc-url="pdf/QuyChe.pdf" class="menu-card document-card">
+                <div data-doc-title="QUY CHẾ HỘI NGHỊ" data-doc-url="pdf/QUYCHE.PDF" class="menu-card document-card">
                     <i class="fas fa-balance-scale-right menu-icon"></i>
                     QUY CHẾ HỘI NGHỊ
                 </div>
 
                 <!-- Hàng 2 -->
-                <div data-doc-title="DỰ THẢO BÁO CÁO KẾT QUẢ HOẠT ĐỘNG" data-doc-url="pdf/BaoCao.pdf" class="menu-card document-card">
+                <div data-doc-title="DỰ THẢO BÁO CÁO KẾT QUẢ HOẠT ĐỘNG" data-doc-url="pdf/BAOCAO.PDF" class="menu-card document-card">
                     <i class="fas fa-file-alt menu-icon"></i>
                     DỰ THẢO BÁO CÁO KẾT QUẢ HOẠT ĐỘNG
                 </div>
-                <div data-doc-title="DỰ THẢO PHƯƠNG HƯỚNG" data-doc-url="pdf/PhuongHuong.pdf" class="menu-card document-card">
+                <div data-doc-title="DỰ THẢO PHƯƠNG HƯỚNG" data-doc-url="pdf/PHUONGHUONG.PDF" class="menu-card document-card">
                     <i class="fas fa-compass menu-icon"></i>
                     DỰ THẢO PHƯƠNG HƯỚNG
                 </div>
 
                 <!-- Hàng 3 -->
-                <div data-doc-title="DỰ THẢO BÁO CÁO GÓP Ý" data-doc-url="pdf/GopY.pdf" class="menu-card document-card">
+                <div data-doc-title="DỰ THẢO BÁO CÁO GÓP Ý" data-doc-url="pdf/GOPY.PDF" class="menu-card document-card">
                     <i class="fas fa-comments menu-icon"></i>
                     DỰ THẢO BÁO CÁO GÓP Ý
                 </div>
-                <div data-doc-title="PHỤ LỤC HỆ THỐNG CHỈ TIÊU" data-doc-url="pdf/ChiTieu.pdf" class="menu-card document-card">
+                <div data-doc-title="PHỤ LỤC HỆ THỐNG CHỈ TIÊU" data-doc-url="pdf/CHITIEU.PDF" class="menu-card document-card">
                     <i class="fas fa-chart-line menu-icon"></i>
                     PHỤ LỤC HỆ THỐNG CHỈ TIÊU
                 </div>
 
                 <!-- Hàng 4 -->
-                <div data-doc-title="PHỤ LỤC GỢI Ý THẢO LUẬN" data-doc-url="pdf/ThaoLuan.pdf" class="menu-card document-card col-span-1 md:col-span-2 max-w-sm mx-auto">
+                <div data-doc-title="PHỤ LỤC GỢI Ý THẢO LUẬN" data-doc-url="pdf/THAOLUAN.PDF" class="menu-card document-card col-span-1 md:col-span-2 max-w-sm mx-auto">
                     <i class="fas fa-lightbulb menu-icon"></i>
                     PHỤ LỤC GỢI Ý THẢO LUẬN
                 </div>
@@ -388,10 +388,12 @@
             const encodedFileUrl = encodeURIComponent(fullResourceUrl);
 
             try {
-                // Kiểm tra tệp có tồn tại không trước khi nhúng (giúp debug tốt hơn)
-                // LƯU Ý QUAN TRỌNG: Không thể dùng fetch/HEAD request với BASE_PATH trên mọi môi trường.
-                // Chúng ta sẽ bỏ qua bước check này để tránh lỗi CORS/Network và dựa vào PDF.js Viewer tự báo lỗi.
-                
+                // Kiểm tra tệp có tồn tại không bằng cách tải file
+                const checkResponse = await fetch(fullResourceUrl, { method: 'HEAD' });
+                if (!checkResponse.ok) {
+                     throw new Error(`Mã lỗi: ${checkResponse.status}. Vui lòng kiểm tra tên tệp.`);
+                }
+
                 // Sử dụng PDF.js Viewer (Web Viewer)
                 const viewerUrl = PDFJS_VIEWER_URL + encodedFileUrl;
                 
