@@ -196,7 +196,6 @@
             width: 100%;
             height: 100%;
             border: none;
-            /* Thay thế lật 3D bằng iframe ổn định */
         }
 
         /* Ẩn các nút không cần thiết */
@@ -392,6 +391,7 @@
 
             try {
                 // Kiểm tra tệp có tồn tại không bằng cách tải file
+                // SỬ DỤNG HEAD REQUEST ĐỂ KIỂM TRA SỰ TỒN TẠI VÀ TRÁNH LỖI PHẢI TẢI LẠI
                 const checkResponse = await fetch(fullResourceUrl, { method: 'HEAD' });
                 if (!checkResponse.ok) {
                      // Nếu lỗi 404/403, báo lỗi chi tiết
