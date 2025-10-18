@@ -22,6 +22,7 @@
             --soft-yellow: #fdfae5; /* Nền vàng nhạt */
             --text-color: #1a202c;
             --header-height: 60px; /* Chiều cao cố định cho control top */
+            --footer-height: 0px; /* Bỏ footer */
         }
 
         /* ĐIỀU CHỈNH FONT THEO YÊU CẦU: SỬ DỤNG FONT TAHOMA PHỔ BIẾN */
@@ -165,7 +166,7 @@
             max-width: 900px;
             box-sizing: border-box;
             z-index: 10; 
-            position: relative; /* Dùng cho nút Trở về */
+            position: relative; 
         }
 
         /* FIX: Tiêu đề căn giữa và chiếm không gian */
@@ -318,8 +319,6 @@
                 <!-- Sẽ nhúng PDF.js Viewer vào đây -->
                 <iframe id="pdfViewer" src="about:blank" sandbox="allow-scripts allow-same-origin allow-popups allow-pointer-lock allow-downloads" referrerpolicy="no-referrer"></iframe>
             </div>
-
-            <!-- Trang Lật 3D (Mô phỏng hiệu ứng) và các nút điều hướng đã bị loại bỏ -->
             
         </div>
         
@@ -382,16 +381,12 @@
             // Xây dựng URL tệp PDF an toàn (Sử dụng encodeURIComponent)
             const cleanedRelativePath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
             
-            // FIX: Đảm bảo mã hóa an toàn, loại bỏ ký tự tiếng Việt
-            const fileNamePart = cleanedRelativePath.substring(cleanedRelativePath.lastIndexOf('/') + 1).toUpperCase(); // Tên file đã là chữ hoa
-            const folderPath = cleanedRelativePath.substring(0, cleanedRelativePath.lastIndexOf('/') + 1); // pdf/
-            
-            const fullResourceUrl = BASE_PATH + folderPath + fileNamePart;
+            // Tên file đã được định dạng CHỮ HOA KHÔNG DẤU trong data-doc-url.
+            const fullResourceUrl = BASE_PATH + cleanedRelativePath;
             const encodedFileUrl = encodeURIComponent(fullResourceUrl);
 
             try {
-                // Kiểm tra tệp có tồn tại không bằng cách tải file
-                // SỬ DỤNG HEAD REQUEST ĐỂ KIỂM TRA SỰ TỒN TẠI VÀ TRÁNH LỖI PHẢI TẢI LẠI
+                // Kiểm tra tệp có tồn tại không trước khi nhúng (giúp debug tốt hơn)
                 const checkResponse = await fetch(fullResourceUrl, { method: 'HEAD' });
                 if (!checkResponse.ok) {
                      // Nếu lỗi 404/403, báo lỗi chi tiết
@@ -406,15 +401,15 @@
                 pdfViewer.src = viewerUrl; 
 
             } catch (error) {
-                // Lỗi này không nên xảy ra ở đây, nhưng nếu có thì hiển thị lỗi
+                // Lỗi này xảy ra khi tệp PDF không tồn tại hoặc bị hỏng/lỗi ký tự
                 console.error("Lỗi tải PDF:", error);
                 
                 const errorHtml = `
                     <div class="h-full flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
                         <i class="fas fa-exclamation-triangle text-red-500 text-6xl mb-4"></i>
                         <h3 class="text-xl font-bold text-red-700 mb-2">LỖI TẢI TÀI LIỆU: TỆP KHÔNG TÌM THẤY</h3>
-                        <p class="text-gray-600 mb-4">Không thể tải tệp (**${fileNamePart}**). Lỗi: ${error.message} <br> 
-                        **VUI LÒNG KIỂM TRA:** Tên tệp đã được đổi thành **CHỮ HOA KHÔNG DẤU** trong thư mục **pdf/** trên GitHub chưa?</p>
+                        <p class="text-gray-600 mb-4">Không thể tải tệp (**${relativePath.replace('pdf/', '')}**). Lỗi: ${error.message} <br> 
+                        **VUI LÒNG KIỂM TRA:** Tệp này có tồn tại và được đặt trong thư mục **pdf/** trên GitHub không?</p>
                         <button onclick="goBackToMenu()" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 hover:bg-red-700 shadow-xl">
                             Trở về Menu
                         </button>
