@@ -22,7 +22,6 @@
             --soft-yellow: #fdfae5; /* Nền vàng nhạt */
             --text-color: #1a202c;
             --header-height: 60px; /* Chiều cao cố định cho control top */
-            --footer-height: 0px; /* Bỏ footer */
         }
 
         /* ĐIỀU CHỈNH FONT THEO YÊU CẦU: SỬ DỤNG FONT TAHOMA PHỔ BIẾN */
@@ -133,7 +132,7 @@
         /* ------------------------------------- */
         #bookReader {
             /* FIX: Cố định tuyệt đối trên màn hình và ẩn khi không dùng */
-            position: fixed; 
+            position: absolute; 
             top: 0;
             left: 0;
             width: 100%;
@@ -166,6 +165,7 @@
             max-width: 900px;
             box-sizing: border-box;
             z-index: 10; 
+            position: relative; /* Dùng cho nút Trở về */
         }
 
         /* FIX: Tiêu đề căn giữa và chiếm không gian */
@@ -211,6 +211,8 @@
             justify-content: center;
             padding: 0.5rem;
             border-radius: 9999px; /* Tròn */
+            position: absolute; /* FIX vị trí */
+            left: 1rem;
         }
 
 
@@ -381,16 +383,18 @@
             // Xây dựng URL tệp PDF an toàn (Sử dụng encodeURIComponent)
             const cleanedRelativePath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
             
-            // FIX: THAY THẾ KHOẢNG TRẮNG CÓ THỂ CÓ TRONG TÊN FILE BẰNG %20 ĐỂ ĐẢM BẢO TẢI ĐÚNG
-            const finalRelativePath = cleanedRelativePath.replace(/ /g, '%20');
+            // FIX: Đảm bảo mã hóa an toàn, loại bỏ ký tự tiếng Việt
+            const fileNamePart = cleanedRelativePath.substring(cleanedRelativePath.lastIndexOf('/') + 1).toUpperCase(); // Tên file đã là chữ hoa
+            const folderPath = cleanedRelativePath.substring(0, cleanedRelativePath.lastIndexOf('/') + 1); // pdf/
             
-            const fullResourceUrl = BASE_PATH + finalRelativePath;
+            const fullResourceUrl = BASE_PATH + folderPath + fileNamePart;
             const encodedFileUrl = encodeURIComponent(fullResourceUrl);
 
             try {
                 // Kiểm tra tệp có tồn tại không bằng cách tải file
                 const checkResponse = await fetch(fullResourceUrl, { method: 'HEAD' });
                 if (!checkResponse.ok) {
+                     // Nếu lỗi 404/403, báo lỗi chi tiết
                      throw new Error(`Mã lỗi: ${checkResponse.status}. Vui lòng kiểm tra tên tệp.`);
                 }
 
@@ -408,8 +412,9 @@
                 const errorHtml = `
                     <div class="h-full flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
                         <i class="fas fa-exclamation-triangle text-red-500 text-6xl mb-4"></i>
-                        <h3 class="text-xl font-bold text-red-700 mb-2">LỖI TẢI TÀI LIỆU: TỆP KHÔNG HỢP LỆ</h3>
-                        <p class="text-gray-600 mb-4">Lỗi xảy ra trong quá trình nhúng. Vui lòng kiểm tra lại **tên tệp gốc** trên GitHub Pages. Tên tệp phải là: **${relativePath.replace('pdf/', '')}**</p>
+                        <h3 class="text-xl font-bold text-red-700 mb-2">LỖI TẢI TÀI LIỆU: TỆP KHÔNG TÌM THẤY</h3>
+                        <p class="text-gray-600 mb-4">Không thể tải tệp (**${fileNamePart}**). Lỗi: ${error.message} <br> 
+                        **VUI LÒNG KIỂM TRA:** Tên tệp đã được đổi thành **CHỮ HOA KHÔNG DẤU** trong thư mục **pdf/** trên GitHub chưa?</p>
                         <button onclick="goBackToMenu()" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 hover:bg-red-700 shadow-xl">
                             Trở về Menu
                         </button>
