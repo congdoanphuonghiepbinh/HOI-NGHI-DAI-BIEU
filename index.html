@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hội Nghị Công Đoàn - Sách Lật 3D</title>
+    <title>Hội Nghị Công Đoàn - Tài liệu trực tuyến</title>
     <!-- Load Tailwind CSS CDN for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Load Font Awesome for icons -->
@@ -21,8 +21,8 @@
             --secondary-red: #cc0000; /* Đỏ tương tác */
             --soft-yellow: #fdfae5; /* Nền vàng nhạt */
             --text-color: #1a202c;
-            --header-height: 70px; /* Chiều cao cố định cho control top */
-            --footer-height: 70px; /* Chiều cao cố định cho control bottom */
+            --header-height: 60px; /* Chiều cao cố định cho control top */
+            --footer-height: 0px; /* Bỏ footer */
         }
 
         /* ĐIỀU CHỈNH FONT THEO YÊU CẦU: SỬ DỤNG FONT TAHOMA PHỔ BIẾN */
@@ -34,7 +34,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 0 0 20px 0;
+            padding: 0;
+            margin: 0;
             overflow-x: hidden; 
         }
 
@@ -42,11 +43,10 @@
         body.book-active {
             overflow: hidden;
             height: 100vh;
-            padding: 0;
         }
         
         /* ------------------------------------- */
-        /* MENU & CARD STYLING */
+        /* MAIN MENU STYLING */
         /* ------------------------------------- */
         #mainMenu {
              display: flex;
@@ -54,6 +54,8 @@
              align-items: center;
              width: 100%;
              max-width: 900px;
+             padding: 20px 10px;
+             transition: opacity 0.3s ease;
         }
         
         .banner-container {
@@ -89,7 +91,6 @@
             cursor: pointer;
             user-select: none; 
             min-height: 120px; 
-            /* FIX: Đảm bảo chữ menu căn giữa đều trên dưới */
             align-items: center;
             justify-content: center;
             line-height: 1.2;
@@ -128,136 +129,81 @@
         }
 
         /* ------------------------------------- */
-        /* BOOK READER STYLING */
+        /* READER STYLING - CHẾ ĐỘ FULL SCREEN */
         /* ------------------------------------- */
         #bookReader {
-            /* FIX: Chuyển sang absolute để cố định và chiếm full màn hình trong phạm vi body.book-active */
-            position: absolute; 
+            /* FIX: Cố định tuyệt đối trên màn hình và ẩn khi không dùng */
+            position: fixed; 
             top: 0;
             left: 0;
             width: 100%;
-            height: 100%; /* Chiếm 100% viewport */
+            height: 100vh; 
             display: none; 
             flex-direction: column;
             align-items: center;
-            padding: 10px;
             background-color: rgba(253, 250, 229, 1); 
             z-index: 1000; 
-            overflow-y: hidden; /* Ngăn cuộn chính của bookReader */
+            overflow: hidden; /* Ngăn cuộn */
             box-sizing: border-box;
+            opacity: 0;
+            transition: opacity 0.3s ease; /* Hiệu ứng chuyển đổi mượt mà */
+        }
+
+        #bookReader.active {
+            display: flex;
+            opacity: 1;
         }
 
         .book-control-top {
-            /* FIX: Thiết lập chiều cao cứng để tính toán phần còn lại của màn hình */
             height: var(--header-height); 
             background-color: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            padding: 10px 15px; 
-            margin-bottom: 5px; 
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 0 10px; 
             width: 100%;
             display: flex;
             justify-content: center; 
             align-items: center;
-            flex-wrap: nowrap;
             max-width: 900px;
             box-sizing: border-box;
+            z-index: 10; 
         }
 
         /* FIX: Tiêu đề căn giữa và chiếm không gian */
         #docTitle {
             text-align: center;
             flex-grow: 1; 
-        }
-
-        .book-control-bottom {
-            /* FIX: Thiết lập chiều cao cứng để tính toán phần còn lại của màn hình */
-            height: var(--footer-height); 
-            display: flex;
-            justify-content: center;
-            gap: 1.5rem; 
-            margin-top: 5px; 
-            padding: 10px 0;
-            align-items: center;
-            box-sizing: border-box;
-            width: 95%;
-            max-width: 900px;
-        }
-        
-        /* Nút chuyển trang nhỏ gọn */
-        .page-nav-icon {
-            @apply p-3 rounded-full bg-gray-300 text-gray-800 transition duration-300 hover:bg-gray-400 shadow-md;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.25rem;
-        }
-        
-        .page-nav-icon:disabled {
-            @apply bg-gray-200 text-gray-500 cursor-not-allowed;
+            font-size: 1.1rem;
+            font-weight: 700;
         }
 
         /* FIX: Tối ưu hóa kích thước Book Container để chiếm không gian chính xác */
         .book-container {
-            width: 95%; 
-            /* Chiều cao tính toán: 100% viewport - header - footer - padding */
-            height: calc(100vh - var(--header-height) - var(--footer-height) - 20px); 
+            width: 100%; 
+            /* Chiều cao tính toán: 100% viewport - header */
+            height: calc(100vh - var(--header-height)); 
             position: relative;
-            perspective: 1500px;
-            transform-style: preserve-3d;
-            margin: 0 auto;
-            border: 1px solid #ccc;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
             max-width: 900px;
             overflow: hidden; 
         }
         
-        /* Cấu trúc Trang Lật 3D */
-        .page {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 100%; 
-            height: 100%;
-            transform-origin: left;
-            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Tốc độ lật nhanh */
-            background-color: white;
-            border-left: 1px solid #ddd;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            backface-visibility: hidden; 
-            border-radius: 0 12px 12px 0; 
-        }
-        
-        .page.flipped {
-            transform: rotateY(-180deg);
-        }
-
         /* PDF Content */
         .pdf-page-content {
             width: 100%;
             height: 100%;
-            overflow: hidden; 
         }
 
         .pdf-page-content iframe {
             width: 100%;
             height: 100%;
             border: none;
-            position: absolute;
-            top: 0;
-            left: 0;
+            /* Thay thế lật 3D bằng iframe ổn định */
         }
-        
-        /* FIX cho iOS/Mobile: Đảm bảo iframe có thể cuộn */
-        #pdfViewer {
-            -webkit-overflow-scrolling: touch;
-            overflow-y: scroll;
+
+        /* Ẩn các nút không cần thiết */
+        .book-control-bottom, .page {
+            display: none !important;
         }
+
 
     </style>
 </head>
@@ -345,47 +291,30 @@
     <!-- BOOK READER SCREEN (Hidden by default) -->
     <div id="bookReader" class="w-full max-w-4xl px-4 flex-col items-center hidden">
         
-        <!-- CONTROL TOP (Tiêu đề) -->
+        <!-- CONTROL TOP (Tiêu đề và Nút Trở về) -->
         <div class="book-control-top">
-            <h2 id="docTitle" class="text-xl font-extrabold text-red-700 text-center flex-1 mx-4 truncate">TÊN TÀI LIỆU</h2>
+            <!-- Nút Trở về nhỏ gọn -->
+            <button id="backButtonSmall" class="p-2 rounded-full bg-red-600 text-white transition duration-300 hover:bg-red-700 shadow-md absolute left-4 top-1/2 transform -translate-y-1/2">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            
+            <h2 id="docTitle" class="text-xl font-extrabold text-red-700 text-center flex-1 mx-16 truncate">TÊN TÀI LIỆU</h2>
         </div>
 
-        <!-- Sách 3D thực tế -->
-        <div class="book-container relative">
+        <!-- Sách 3D thực tế (Bây giờ là Trình xem PDF full màn hình) -->
+        <div class="book-container">
             
-            <!-- Trang Nội Dung Chính (Sử dụng iframe để nhúng PDF) -->
-            <div id="pageContent" class="page rounded-r-lg" style="z-index: 1000;">
-                <div class="pdf-page-content">
-                    <!-- Sẽ nhúng PDF vào đây -->
-                    <iframe id="pdfViewer" src="about:blank" sandbox="allow-scripts allow-same-origin allow-popups" referrerpolicy="no-referrer"></iframe>
-                </div>
+            <div id="pageContent" class="pdf-page-content">
+                <!-- Sẽ nhúng PDF.js Viewer vào đây -->
+                <iframe id="pdfViewer" src="about:blank" sandbox="allow-scripts allow-same-origin allow-popups allow-pointer-lock allow-downloads" referrerpolicy="no-referrer"></iframe>
             </div>
-            
-            <!-- Trang Lật 3D (Mô phỏng hiệu ứng) -->
-            <div id="flipPage" class="page rounded-r-lg bg-gray-100" style="z-index: 990;">
-                 <div class="page-content flex flex-col items-center justify-center p-4 text-gray-500 font-bold text-center">
-                    <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
-                    <p>ĐANG LẬT TRANG...</p>
-                 </div>
-            </div>
+
+            <!-- Trang Lật 3D (Mô phỏng hiệu ứng) và các nút điều hướng đã bị loại bỏ -->
             
         </div>
         
-        <!-- CONTROL BOTTOM (Nút Trang Trước/Sau & Nút Trở Về Nhỏ) -->
-        <div class="book-control-bottom w-full">
-            <button id="prevPage" class="page-nav-icon">
-                <i class="fas fa-chevron-left"></i>
-            </button>
-
-            <!-- FIX: Nút Trở về nhỏ gọn, căn giữa -->
-            <button id="backButtonSmall" class="page-nav-icon">
-                <i class="fas fa-undo"></i>
-            </button>
-
-             <button id="nextPage" class="page-nav-icon">
-                <i class="fas fa-chevron-right"></i>
-            </button>
-        </div>
+        <!-- CONTROL BOTTOM (Đã bị loại bỏ) -->
+        <div class="book-control-bottom"></div>
     </div>
 
     <script>
@@ -415,15 +344,8 @@
         const docTitle = document.getElementById('docTitle');
         const menuItems = document.querySelectorAll('.document-card'); 
         const bannerImage = document.getElementById('bannerImage');
-
-        const pageContent = document.getElementById('pageContent');
-        const flipPage = document.getElementById('flipPage');
         const pdfViewer = document.getElementById('pdfViewer');
-        const nextPageButton = document.getElementById('nextPage');
-        const prevPageButton = document.getElementById('prevPage');
         const backButtonSmall = document.getElementById('backButtonSmall');
-        
-        let isFlipping = false;
         
         // --- XỬ LÝ BANNER ---
         function loadBanner() {
@@ -436,68 +358,36 @@
             }
         }
 
-        // --- HÀM MÔ PHỎNG LẬT TRANG 3D VÀ HIỂN THỊ PDF ---
+        // --- HÀM HIỂN THỊ PDF ỔN ĐỊNH ---
         
-        // Hàm mô phỏng hiệu ứng lật trang 3D
-        function handlePageFlip(direction) {
-            if (isFlipping) return;
-            isFlipping = true;
-
-            // Kích hoạt hiệu ứng lật 3D
-            if (direction === 'next') {
-                flipPage.classList.add('flipped');
-            } else if (direction === 'prev') {
-                flipPage.classList.remove('flipped');
-            }
-            
-            nextPageButton.disabled = true;
-            prevPageButton.disabled = true;
-
-            // Sau khi lật xong, reset trạng thái flipPage
-            setTimeout(() => {
-                isFlipping = false;
-                nextPageButton.disabled = false;
-                prevPageButton.disabled = false;
-                // Nếu muốn giữ trạng thái lật, chỉ cần bỏ dòng này
-            }, 300); 
-            
-            // NOTE: Do sử dụng Web Viewer, việc lật trang thực tế phải cuộn nội dung bên trong iframe.
-            // Mã này chỉ mô phỏng hiệu ứng thị giác.
-        }
-
         // Hàm tải và hiển thị PDF (Sử dụng PDF.js Viewer)
         async function loadAndShowPDF(relativePath, title) {
             
             docTitle.textContent = "Đang tải tài liệu...";
             mainMenu.style.display = 'none';
-            bookReader.style.display = 'flex'; 
-            flipPage.classList.remove('flipped'); 
+            // Thêm class active để kích hoạt transition và hiển thị full screen
+            document.body.classList.add('book-active');
+            bookReader.classList.add('active');
             
-            // FIX: Ẩn cuộn body khi đang xem tài liệu
-            document.body.classList.add('book-active'); 
+            // Xây dựng URL tệp PDF an toàn (Sử dụng encodeURIComponent)
+            const cleanedRelativePath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
+            const fullResourceUrl = BASE_PATH + cleanedRelativePath;
+            const encodedFileUrl = encodeURIComponent(fullResourceUrl);
 
             try {
-                // Xây dựng URL tệp PDF an toàn (Sử dụng encodeURIComponent)
-                const cleanedRelativePath = relativePath.startsWith('/') ? relativePath.substring(1) : relativePath;
-                const fullResourceUrl = BASE_PATH + cleanedRelativePath;
-                
-                // Thử kiểm tra tệp có tồn tại không (Không bắt buộc, nhưng tốt hơn cho UX)
+                // Kiểm tra tệp có tồn tại không trước khi nhúng (giúp debug tốt hơn)
                 const checkResponse = await fetch(fullResourceUrl, { method: 'HEAD' });
                 if (!checkResponse.ok) {
-                     throw new Error(`Tệp ${relativePath} không tìm thấy (Lỗi ${checkResponse.status}).`);
+                     throw new Error(`Mã lỗi: ${checkResponse.status}. Vui lòng kiểm tra tên tệp.`);
                 }
 
                 // Sử dụng PDF.js Viewer (Web Viewer)
-                const viewerUrl = PDFJS_VIEWER_URL + encodeURIComponent(fullResourceUrl);
+                const viewerUrl = PDFJS_VIEWER_URL + encodedFileUrl;
                 
                 // 3. Cập nhật nội dung và tiêu đề
                 docTitle.textContent = title;
                 pdfViewer.src = viewerUrl; 
 
-                // Gắn sự kiện lật trang mô phỏng
-                nextPageButton.onclick = () => handlePageFlip('next');
-                prevPageButton.onclick = () => handlePageFlip('prev');
-                
             } catch (error) {
                 console.error("Lỗi tải PDF:", error);
                 
@@ -505,33 +395,31 @@
                 const errorHtml = `
                     <div class="h-full flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
                         <i class="fas fa-exclamation-triangle text-red-500 text-6xl mb-4"></i>
-                        <h3 class="text-xl font-bold text-red-700 mb-2">LỖI TẢI TÀI LIỆU</h3>
-                        <p class="text-gray-600 mb-4">Không thể tải tệp (${relativePath}). Vui lòng kiểm tra tên tệp và đảm bảo tệp PDF **không bị lỗi** và **có tồn tại** trong thư mục **pdf/** trên GitHub.</p>
+                        <h3 class="text-xl font-bold text-red-700 mb-2">LỖI TẢI TÀI LIỆU: TỆP KHÔNG HỢP LỆ</h3>
+                        <p class="text-gray-600 mb-4">Không thể tải tệp (${relativePath}). ${error.message} <br> Vui lòng kiểm tra: 1. Tên tệp có khớp với tên file trên GitHub không? 2. Tệp PDF có bị lỗi hỏng không?</p>
                         <button onclick="goBackToMenu()" class="bg-red-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 hover:bg-red-700 shadow-xl">
                             Trở về Menu
                         </button>
                     </div>
                 `;
                 pdfViewer.srcdoc = errorHtml;
-                
-                // Giữ nguyên giao diện sách lật để người dùng có thể quay lại
                 docTitle.textContent = title + " (LỖI)";
-                
             }
         }
 
         // Xử lý nút Trở về Menu Chính
         function goBackToMenu() {
-            
-            flipPage.classList.remove('flipped');
-            document.body.classList.remove('book-active'); 
+            // Hiệu ứng chuyển đổi mượt mà
+            bookReader.classList.remove('active'); 
+            document.body.classList.remove('book-active');
 
-            bookReader.style.display = 'none';
-            mainMenu.style.display = 'flex';
-            mainMenuFooter.style.display = 'block';
-
-            pdfViewer.src = 'about:blank';
-            pdfViewer.srcdoc = ''; 
+            setTimeout(() => {
+                bookReader.style.display = 'none';
+                mainMenu.style.display = 'flex';
+                mainMenuFooter.style.display = 'block';
+                pdfViewer.src = 'about:blank';
+                pdfViewer.srcdoc = ''; 
+            }, 300);
         }
 
         // Gắn sự kiện cho các menu tài liệu
@@ -543,7 +431,7 @@
             });
         });
 
-        // Gắn sự kiện nút trở về nhỏ (CONTROL BOTTOM)
+        // Gắn sự kiện nút trở về nhỏ
         backButtonSmall.addEventListener('click', goBackToMenu);
 
         // Khởi động
